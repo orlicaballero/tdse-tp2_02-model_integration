@@ -1,0 +1,82 @@
+  app.c (app.h)
+   Endless loops, which execute tasks with fixed computing time. This 
+   sequential execution is only deviated from when an interrupt event occurs.
+
+	Tipos de datos y estructuras: 
+		1. Estructura task_cfg_t: 
+		Descripción: estructura de configuración para una tarea.
+
+		Miembros:
+		
+		task_init: puntero a función de inicialización de la tarea.
+		
+		task_update: puntero a función de actualización (ejecución) de la tarea.
+		
+		parameters: puntero a datos específicos que la tarea podría necesitar.
+		
+		
+		2. Estructura task_dta_t:
+		Descripción: estructura de datos de una tarea.
+
+		Miembro:
+		WCET: entero de 32 bits. tiempo máximo que tardó la tarea en ejecutarse, medido en microsegundos.
+				
+		uint32_t
+		char
+		
+		
+	Arreglos de estructuas de datos:
+		1. task_cfg_list:
+		Descripción: arreglo constante de configuración para las 3 tareas principales del sistema.
+
+		Tareas incluidas:Sensor.Sistema.Actuador.
+
+	Metodos (funciones):
+		1. app_init:
+			Propósito: Inicializa la aplicación.
+
+			Acciones:
+			
+			Muestra mensajes por el logger (depuración).
+			
+			Inicializa los contadores globales.
+			
+			Llama a la función task_x_init de cada tarea.
+			
+			Inicializa WCET a 0 para cada tarea.
+			
+			Inicializa el contador de ciclos (DWT).
+		
+		2. app_update:
+			Propósito: Actualiza las tareas del sistema de manera cíclica.
+
+			Acciones:
+			
+			Solo ejecuta si g_app_tick_cnt > 0 (sistema basado en eventos).
+			
+			Llama a task_x_update de cada tarea.
+			
+			Mide el tiempo de ejecución con cycle_counter_*().
+			
+			Acumula el tiempo total (g_app_time_us).
+			
+			Actualiza WCET de cada tarea si el nuevo valor es mayor.
+
+			
+		3. HAL_SYSTICK_Callback
+			Propósito: Se ejecuta cada vez que ocurre una interrupción SysTick (cada 1ms).
+
+			Acciones:
+			
+			Incrementa el contador de ticks global y los de cada tarea.
+			
+			Esto permite que las tareas puedan programarse con base en el tiempo.
+		
+		
+		
+		
+		
+		
+		
+		
+...

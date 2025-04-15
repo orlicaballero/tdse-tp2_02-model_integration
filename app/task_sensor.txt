@@ -1,0 +1,120 @@
+  task_sensor.c (task_sensor.h, task_sensor_attribute.h) 
+   Non-Blocking & Update By Time Code -> Sensor Modeling
+  
+  
+Enumeraciones definidas (task_sensor_attribute.h):
+
+
+1. task_sensor_ev_t - Eventos generados por el sensor:
+
+	EV_BTN_XX_UP
+
+	EV_BTN_XX_DOWN
+
+2. task_sensor_st_t - Estados posibles del sensor (FSM - máquina de estados):
+
+	ST_BTN_XX_UP
+
+	ST_BTN_XX_FALLING
+
+	ST_BTN_XX_DOWN
+
+	ST_BTN_XX_RISING
+
+3. task_sensor_id_t - Identificador del sensor:
+
+	ID_BTN_A (único sensor en este caso)
+
+
+Estructuras de datos (task_sensor_attribute.h)
+
+1. task_sensor_cfg_t - Contiene los parámetros fijos de configuración de cada sensor:
+
+
+Miembros
+    task_sensor_id_t identifier;      // ID del sensor
+    GPIO_TypeDef *gpio_port;          // Puerto GPIO del sensor
+    uint16_t pin;                     // Pin del sensor
+    GPIO_PinState pressed;            // Nivel lógico cuando está presionado
+    uint32_t tick_max;                // Tiempo máximo (antirebote o hold)
+    task_sensor_ev_t signal_up;       // Evento que genera al soltar
+    task_sensor_ev_t signal_down;     // Evento que genera al presionar
+
+
+2. task_sensor_dta_t - Contiene los datos dinámicos y de estado del sensor en tiempo de ejecución:
+
+
+Miembros:
+    uint32_t tick;                    // Contador de tiempo para antirebote
+    task_sensor_st_t state;          // Estado actual del FSM
+    task_sensor_ev_t event;          // Último evento recibido
+
+
+Arrays de estructuras de datos
+
+1. task_sensor_cfg_list[] - Array constante con la configuración de sensores:
+
+
+const task_sensor_cfg_t task_sensor_cfg_list[] = {
+    { ID_BTN_A, BTN_A_PORT, BTN_A_PIN, BTN_A_PRESSED, DEL_BTN_XX_MAX,
+      EV_SYS_XX_IDLE, EV_SYS_XX_ACTIVE }
+};
+
+Contiene 1 sensor configurado (BTN_A).
+
+
+2. task_sensor_dta_list[] - Array de datos dinámicos de sensores (uno por cada configuración):
+
+
+task_sensor_dta_t task_sensor_dta_list[] = {
+    { DEL_BTN_XX_MIN, ST_BTN_XX_UP, EV_BTN_XX_UP }
+};
+
+Estado inicial: UP, evento: UP, tick en 0.
+
+
+Métodos
+
+
+1. void task_sensor_init(void *parameters):
+
+Inicializa la tarea de sensor.
+
+Reinicia el contador global g_task_sensor_cnt.
+
+Inicializa los datos (state, event, tick) para cada sensor.
+
+Imprime por logger el estado inicial del FSM.
+
+
+2. void task_sensor_update(void *parameters):
+
+Se ejecuta periódicamente controlado por g_task_sensor_tick_cnt.
+
+Para cada sensor:
+
+Lee el pin configurado.
+
+Determina si el botón está presionado o liberado → genera evento (DOWN o UP).
+
+Ejecuta switch (state) con casos para cada estado del FSM.
+
+Cada case evalúa el evento actual y puede:.
+
+Cambiar el estado (p_task_sensor_dta->state = ...).
+
+Generar eventos al sistema (put_event_task_system(...)).
+
+Modificar el tick.
+
+
+Control por Tick
+
+La variable g_task_sensor_tick_cnt permite ejecutar la tarea periódicamente sin bloqueo:
+
+
+volatile uint32_t g_task_sensor_tick_cnt;
+Se decrementa y evalúa dentro de task_sensor_update() para ejecutar solo si corresponde.
+
+
+
